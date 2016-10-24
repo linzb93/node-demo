@@ -13,16 +13,15 @@ http.get(url, function(res) {
     });
 
     res.on('end', function() {
-        // printHTML(html);
+        printHTML(html);
     })
 }).on('error', function() {});
 
 function printHTML(html) {
+    //下面这行是解析gbk编码格式的网站，非gbk的无需使用。
     // var html1 = iconv.decode(Buffer.concat(html), 'gbk');
     var html1 = html.toString();
     var $ = cheerio.load(html1, {decodeEntities: false});
-    // printToFile($('body').html())
-    // console.log($('.post_item').eq(4).find('.post_item_summary').text());
     HTMLFilter($, '#post_list');
 }
 
