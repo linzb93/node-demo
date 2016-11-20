@@ -1,0 +1,6 @@
+@import "assist/mixin";
+
+.a {
+    @include border(30px);
+    color: #999;
+}

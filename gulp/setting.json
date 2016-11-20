@@ -1,0 +1,8 @@
+{
+    "initDir": "src",
+    "targetDir": "dist",
+    "needCompressSass": false,
+    "watchCwd": {
+        "cwd": "src"
+    }
+}
