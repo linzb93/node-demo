@@ -1,3 +1,3 @@
 // main.js
-require('./mymodule.js')();
-require('style!css!./style.css');
+var add = require('./add.js');
+console.log(add(10,4));
