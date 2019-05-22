@@ -2,38 +2,48 @@
 var axios = require('axios');
 var cheerio = require('cheerio');
 var fs = require('fs');
-var opn = require('opn');
-const PQueue = require('p-queue');
-const queue = new PQueue({ concurrency: 1 });
+var open = require('open');
+const pEach = require('p-each-series');
+const iconvLite = require('iconv-lite')
+const chalk = require('chalk');
 
-axios.get('http://777.nd.com.cn/news/link.html')
-.then(async (html) => {
-    const $ = cheerio.load(html.data);
+function log(text, isRight) {
+    if (isRight) {
+        console.log(chalk.green(text));
+    } else {
+        console.log(chalk.red(text));
+    }
+}
+
+axios.get('http://www.nd.com.cn/about/link.shtml', {
+    responseType: 'arraybuffer'
+})
+.then(async res => {
+    const $ = cheerio.load(iconvLite.decode(Buffer.concat([res.data]), 'gbk'));
     var arr = [];
     var ret = [];
-    $('.product-link').find('td a').each(function() {
+    $('.product-link').eq(2).find('td a').each(function() {
         arr.push({
             title: $(this).text(),
             url: $(this).attr('href')
         });
     });
-    for (var i = 0; i < arr.length; i++) {
+    await pEach(arr, async item => {
         try {
-            let data = await axios.get(arr[i].url);
-            await queue.add(() => data);
-            console.log(arr[i].title + ' 正常访问');
-        } catch (e) {
-            ret.push(arr[i].title + ' 无法访问');
+            await axios.get(item.url);
+            log(`${item.title} 正常访问`, true);
+        } catch(e) {
+            ret.push(`${item.title} 无法访问`);
             if (e.response && e.response.statusText === 'Not Found') {
-                console.log(arr[i].title + ':网站不存在');
+                log(`${item.title} : 网站不存在`);
             } else if (e.code === 'ETIMEDOUT') {
-                console.log(arr[i].title + ':访问超时');
+                log(`${item.title} : 访问超时`);
             } else {
-                console.log(arr[i].title + ' 无法访问');
+                log(`${item.title} : 无法访问`);
             }
         }
-    }
-    await queue.onEmpty();
+    });
+
     let writeCon = '';
     if (ret.length === 0) {
         writeCon = '所有网站都正常访问';
@@ -42,6 +52,9 @@ axios.get('http://777.nd.com.cn/news/link.html')
     }
     fs.writeFile('demo.txt', writeCon, err => {
         if (err) throw err;
-        opn('./demo.txt');
+        open('./demo.txt');
     });
+})
+.catch(e => {
+    log(e)
 })
