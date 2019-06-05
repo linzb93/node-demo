@@ -34,7 +34,7 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
             log(`${item.title} 正常访问`, true);
         } catch(e) {
             ret.push(`${item.title} 无法访问`);
-            if (e.response && e.response.statusText === 'Not Found') {
+            if (e.code === 'ENOTFOUND') {
                 log(`${item.title} : 网站不存在`);
             } else if (e.code === 'ETIMEDOUT') {
                 log(`${item.title} : 访问超时`);
