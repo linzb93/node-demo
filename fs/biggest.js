@@ -1,8 +1,7 @@
-// 获取最大的文件夹
 const fs = require('fs');
 const path = require('path');
 const bytes = require('bytes');
-const root = 'D:/桌面/coding/Node/cli';
+const root = '';
 let size = 0;
 
 // 简单实现一个promisify
@@ -54,13 +53,30 @@ function readFileRecursive(dir, callback) {
       console.log(err);
     });
 }
-let list = [];
-readFileRecursive(root, dest => {
-  list.push(dest);
-})
-  .then(() => {
-    size = list.reduce((a, b) => {
-      return a + fs.statSync(b).size;
-    }, 0);
-    console.log(bytes(size, { decimalPlaces: 0 }));
+
+function getDirSize(roots) {
+  let list = [];
+  readFileRecursive(roots, dest => {
+    list.push(dest);
+  })
+    .then(() => {
+      size = list.reduce((a, b) => {
+        return a + fs.statSync(b).size;
+      }, 0);
+      console.log(`${path.basename(roots)}: ${bytes(size, { decimalPlaces: 0 })}`);
+    });
+}
+
+readdir(root)
+  .then(files => {
+    files.forEach(file => {
+      stat(path.resolve(root, file))
+        .then(stats => {
+          if (stats.isDirectory()) {
+            getDirSize(path.resolve(root, file));
+          } else {
+            console.log(`${path.basename(file)}: ${bytes(stats.size, { decimalPlaces: 0 })}`);
+          }
+        })
+    })
   })
