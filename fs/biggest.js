@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const bytes = require('bytes');
+const chalk = require('chalk');
 const root = '';
-let size = 0;
 
 // 简单实现一个promisify
 function promisify(fn) {
@@ -55,15 +55,17 @@ function readFileRecursive(dir, callback) {
 }
 
 function getDirSize(roots) {
-  let list = [];
+  const list = [];
   readFileRecursive(roots, dest => {
     list.push(dest);
   })
     .then(() => {
-      size = list.reduce((a, b) => {
+      const size = list.reduce((a, b) => {
         return a + fs.statSync(b).size;
       }, 0);
-      console.log(`${path.basename(roots)}: ${bytes(size, { decimalPlaces: 0 })}`);
+      const transformedSize = bytes(size, { decimalPlaces: 1 });
+      const output = size >= bytes('1GB') ? chalk.red(transformedSize) : transformedSize;
+      console.log(`${path.basename(roots)}: ${output}`);
     });
 }
 
@@ -75,7 +77,7 @@ readdir(root)
           if (stats.isDirectory()) {
             getDirSize(path.resolve(root, file));
           } else {
-            console.log(`${path.basename(file)}: ${bytes(stats.size, { decimalPlaces: 0 })}`);
+            console.log(`${path.basename(file)}: ${bytes(stats.size, { decimalPlaces: 1 })}`);
           }
         })
     })
