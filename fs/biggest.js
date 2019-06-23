@@ -1,6 +1,3 @@
-/**
-* 递归获取当前目录下最大的文件/文件夹
-*/
 const fs = require('fs');
 const path = require('path');
 const bytes = require('bytes');
@@ -8,8 +5,6 @@ const chalk = require('chalk');
 const pify = require('pify');
 const open = require('open');
 const inquirer = require('inquirer');
-const biggerSize = '1GB';
-const root = ''; // 请输入你需要查询的文件夹路径
 
 const readdir = pify(fs.readdir);
 const stat = pify(fs.stat);
@@ -32,15 +27,17 @@ function isAllFileInDir(absDir) {
 }
 
 // 递归搜索文件
-function readFileRecursive(dir, callback) {
+function readFileRecursive(dir, exclude, callback) {
   return readdir(dir)
   .then(files => {
-    const promiseFilesList = files.map(item => {
+    const promiseFilesList = files
+    .filter(file => !exclude.includes(file))
+    .map(item => {
       const dest = path.join(dir, item);
       return stat(dest)
       .then(stats => {
         if (stats.isDirectory()) {
-          return readFileRecursive(dest, callback);
+          return readFileRecursive(dest, exclude, callback);
         }
         callback(dest);
       });
@@ -49,9 +46,10 @@ function readFileRecursive(dir, callback) {
   });
 }
 
-function getDirSize(roots) {
+// 获取文件夹尺寸
+function getDirSize(options) {
   const list = [];
-  return readFileRecursive(roots, dest => {
+  return readFileRecursive(options.root, options.exclude, dest => {
     list.push(dest);
   })
   .then(() => {
@@ -59,24 +57,37 @@ function getDirSize(roots) {
       return a + fs.statSync(b).size;
     }, 0);
     return Promise.resolve({
-      name: path.basename(roots),
+      name: path.basename(options.root),
       isDirectory: true,
       size
     });
   });
 }
 
-function loop(absDir) {
-  console.log('\n');
+// 完成检索后的操作
+function afterFinished(dir) {
+  console.log(chalk.green('检索完成，退出程序！'));
+  open(dir);
+}
+
+// main
+function traverseDir(options) {
+  const absDir = options.root;
+  const exclude = Array.isArray(options.exclude) ? options.exclude : [];
   console.log('=================================');
-  console.log(`进入${absDir}文件夹`);
+  console.log(`进入 ${absDir} 文件夹`);
   readdir(absDir)
   .then(files => {
-    const pm = files.map(file => {
+    const pm = files
+    .filter(file => !exclude.includes(file))
+    .map(file => {
       return stat(path.resolve(absDir, file))
       .then(stats => {
         if (stats.isDirectory()) {
-          return getDirSize(path.resolve(absDir, file));
+          return getDirSize({
+            root: path.resolve(absDir, file),
+            exclude: exclude
+          });
         } else {
           return Promise.resolve({
             name: path.basename(file),
@@ -98,12 +109,12 @@ function loop(absDir) {
   .then(resList => {
     resList.forEach(res => {
       const transformedSize = bytes(res.size, { decimalPlaces: 1 });
-      const output = res.size >= bytes(biggerSize) ? chalk.red(transformedSize) : transformedSize;
+      const output = res.size >= bytes(options.limit) ? chalk.red(transformedSize) : transformedSize;
       console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${output}`);
     });
     const maxItem = getMaxItem(resList, 'size');
-    console.log(chalk.green(`最大的${maxItem.isDirectory ? '文件夹' : '文件'}是${maxItem.name}, 尺寸是${bytes(maxItem.size, {decimalPlaces: 1})}`));
-    if (!isAllFileInDir(absDir)) {
+    console.log(chalk.green(`最大的${maxItem.isDirectory ? '文件夹' : '文件'}是 ${maxItem.name}`));
+    if (maxItem.isDirectory && !isAllFileInDir(absDir)) {
       inquirer.prompt([
         {
           type: 'confirm',
@@ -114,18 +125,22 @@ function loop(absDir) {
       ])
       .then(answer => {
         if (answer.toDeeper) {
-          loop(path.resolve(absDir, maxItem.name))
+          traverseDir({
+            ...options,
+            root: path.resolve(absDir, maxItem.name)
+          })
         } else {
-          console.log(chalk.green('检索完成，退出程序！'));
-          open(absDir);
+          afterFinished(absDir);
         }
       })
     } else {
-      console.log('\n');
-      console.log(chalk.green('检索完成，退出程序！'));
-      open(absDir);
+      afterFinished(absDir);
     }
   });
 }
 
-loop(root);
+traverseDir({
+    root: '', // 需要查询的文件夹路径
+    exclude: ['node_modules', '.git'], // 排除的文件夹
+    limit: '10MB' // 最大的尺寸，超过的会有特殊标记
+});
