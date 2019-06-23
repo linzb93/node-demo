@@ -1,18 +1,17 @@
 // 检测网址是否可以访问
 const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
-const open = require('open');
 const pEach = require('p-each-series');
-const iconvLite = require('iconv-lite')
+const iconvLite = require('iconv-lite');
 const chalk = require('chalk');
+const ProgressBar = require('progress');
+let bar = null;
+function log(text) {
+  console.log(chalk.green(text));
+}
 
-function log(text, isRight) {
-    if (isRight) {
-        console.log(chalk.green(text));
-    } else {
-        console.log(chalk.red(text));
-    }
+function logError(text) {
+  console.log(chalk.red(text));
 }
 
 axios.get('http://www.nd.com.cn/about/link.shtml', {
@@ -20,41 +19,45 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
 })
 .then(async res => {
     const $ = cheerio.load(iconvLite.decode(Buffer.concat([res.data]), 'gbk'));
-    const targetList = [];
-    const ret = [];
+    const arr = [];
+    let brokenLinkCount = 0;
     $('.product-link').find('td a').each(function() {
-        targetList.push({
+        arr.push({
             title: $(this).text(),
             url: $(this).attr('href')
         });
     });
-    await pEach(targetList, async item => {
+    bar = new ProgressBar(':bar :percent', {
+      total: arr.length,
+      width: 60,
+      complete: chalk.bgGreen(' '),
+      incomplete: chalk.bgWhite(' ')
+    });
+    console.log('开始检测');
+    await pEach(arr, async item => {
         try {
             await axios.get(item.url);
-            log(`${item.title} 正常访问`, true);
         } catch(e) {
-            ret.push(`${item.title} 无法访问`);
-            if (e.code === 'ENOTFOUND') {
-                log(`${item.title} : 网站不存在`);
+            if (e.response && e.response.statusText === 'Not Found') {
+              logError(`${item.title} : 网站不存在`);
             } else if (e.code === 'ETIMEDOUT') {
-                log(`${item.title} : 访问超时`);
+              logError(`${item.title} : 访问超时`);
             } else {
-                log(`${item.title} : 无法访问`);
+              logError(`${item.title} : 无法访问`);
             }
+            brokenLinkCount++;
+        } finally {
+          bar.tick();
+          if (bar.complete) {
+            if (brokenLinkCount) {
+              logError(`检测完成，有${brokenLinkCount}个网站无法访问。`);
+            } else {
+              log('检测完成，所有网站均可访问。')
+            }
+          }
         }
-    });
-
-    let writeCon = '';
-    if (ret.length === 0) {
-        writeCon = '所有网站都正常访问';
-    } else {
-        writeCon = ret.join('\r\n');
-    }
-    fs.writeFile('demo.txt', writeCon, err => {
-        if (err) throw err;
-        open('./demo.txt');
     });
 })
 .catch(e => {
-    log(e)
-});
+  logError(e);
+})

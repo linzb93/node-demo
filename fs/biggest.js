@@ -66,7 +66,7 @@ function getDirSize(options) {
 
 // 完成检索后的操作
 function afterFinished(dir) {
-  console.log(chalk.green('检索完成，退出程序！'));
+  console.log('检索完成，退出程序！');
   open(dir);
 }
 
@@ -74,10 +74,10 @@ function afterFinished(dir) {
 function traverseDir(options) {
   const absDir = options.root;
   const exclude = Array.isArray(options.exclude) ? options.exclude : [];
-  console.log('=================================');
-  console.log(`进入 ${absDir} 文件夹`);
   readdir(absDir)
   .then(files => {
+    console.log('=================================');
+    console.log(`进入 ${absDir} 文件夹`);
     const pm = files
     .filter(file => !exclude.includes(file))
     .map(file => {
@@ -100,20 +100,42 @@ function traverseDir(options) {
     return Promise.all(pm);
   })
   .catch(err => {
-    if (err.code === 'ENOENT') {
-      console.log(chalk.red('文件夹路径错误，请重新输入'));
-    } else {
+    const errMap = [
+      {
+        type: 'ENOENT',
+        message: '文件夹路径错误，请重新输入'
+      },
+      {
+        type: 'ENOTDIR',
+        message: '目标非文件夹，请重新输入'
+      }
+    ]
+    const mat = errMap.find(item => item.type === err.code);
+    if (mat === undefined) {
       console.log(err);
+    } else {
+      console.log(mat.message);
     }
   })
   .then(resList => {
-    resList.forEach(res => {
+    if (resList === undefined) {
+      return;
+    }
+    const filterList = resList
+    .filter(res => res.size >= bytes(options.limit));
+    if (filterList.length === 0) {
+      console.log('没有大的文件/文件夹，退出程序！');
+      open(options.root);
+      return;
+    }
+    console.log('较大的文件/文件夹有：');
+    filterList
+    .forEach(res => {
       const transformedSize = bytes(res.size, { decimalPlaces: 1 });
-      const output = res.size >= bytes(options.limit) ? chalk.red(transformedSize) : transformedSize;
-      console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${output}`);
+      console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${transformedSize}`);
     });
     const maxItem = getMaxItem(resList, 'size');
-    console.log(chalk.green(`最大的${maxItem.isDirectory ? '文件夹' : '文件'}是 ${maxItem.name}`));
+    console.log(`最大的${maxItem.isDirectory ? '文件夹' : '文件'}是 ${maxItem.name}`);
     if (maxItem.isDirectory && !isAllFileInDir(absDir)) {
       inquirer.prompt([
         {
@@ -140,7 +162,7 @@ function traverseDir(options) {
 }
 
 traverseDir({
-    root: '', // 需要查询的文件夹路径
-    exclude: ['node_modules', '.git'], // 排除的文件夹
-    limit: '10MB' // 最大的尺寸，超过的会有特殊标记
+  root: '', // 需要查询的文件夹路径
+  exclude: ['node_modules', '.git', 'README.md', '.dbac'], // 排除的文件夹
+  limit: '1GB' // 最大的尺寸，超过的会显示
 });
