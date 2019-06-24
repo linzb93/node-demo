@@ -1,3 +1,4 @@
+// 递归查找目录下最大的文件夹
 const fs = require('fs');
 const path = require('path');
 const bytes = require('bytes');
@@ -41,7 +42,7 @@ function readFileRecursive(dir, exclude, callback) {
         }
         callback(dest);
       });
-    })
+    });
     return Promise.all(promiseFilesList);
   });
 }
@@ -66,7 +67,7 @@ function getDirSize(options) {
 
 // 完成检索后的操作
 function afterFinished(dir) {
-  console.log('检索完成，退出程序！');
+  console.log(chalk.green('检索完成，退出程序！'));
   open(dir);
 }
 
@@ -112,9 +113,9 @@ function traverseDir(options) {
     ]
     const mat = errMap.find(item => item.type === err.code);
     if (mat === undefined) {
-      console.log(err);
+      console.log(chalk.red(err));
     } else {
-      console.log(mat.message);
+      console.log(chalk.red(mat.message));
     }
   })
   .then(resList => {
@@ -124,7 +125,7 @@ function traverseDir(options) {
     const filterList = resList
     .filter(res => res.size >= bytes(options.limit));
     if (filterList.length === 0) {
-      console.log('没有大的文件/文件夹，退出程序！');
+      console.log(chalk.green('没有大的文件/文件夹，退出程序！'));
       open(options.root);
       return;
     }
