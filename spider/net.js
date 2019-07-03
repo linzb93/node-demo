@@ -4,6 +4,8 @@ const cheerio = require('cheerio');
 const pEach = require('p-each-series');
 const iconvLite = require('iconv-lite');
 const chalk = require('chalk');
+const ora = require('ora');
+const ms = require('ms');
 function log(text) {
   console.log(chalk.green(text));
 }
@@ -28,19 +30,21 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
         url: $(this).attr('href')
       });
     });
-    console.log('开始检测\n');
     await pEach(siteList, async item => {
+      let spinner = ora(`正在检测 ${item.title}`).start();
+      let startTime = new Date().getTime();
       try {
         await axios.get(item.url);
-        log(`${item.title} 正常访问`);
+        let duration = ms(new Date().getTime() - startTime, {long: true});
+        spinner.succeed(`${item.title} 正常访问，耗时${duration}`);
         count.ok++;
       } catch (e) {
         if (e.response && e.response.statusText === 'Not Found') {
-          logError(`${item.title} 网站不存在`);
+          spinner.fail(`${item.title} 网站不存在`);
         } else if (e.code === 'ETIMEDOUT') {
-          logError(`${item.title} 访问超时`);
+          spinner.fail(`${item.title} 访问超时`);
         } else {
-          logError(`${item.title} 无法访问`);
+          spinner.fail(`${item.title} 无法访问`);
         }
         count.error++;
       }
