@@ -1,0 +1,30 @@
+{
+  "name": "mycli",
+  "version": "1.0.0",
+  "description": "A cli used by linzhibin",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/linzb93/node-demo"
+  },
+  "bin": {
+    "mycli": "index.js"
+  },
+  "author": "linzhibin",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "chalk": "^2.4.2",
+    "cheerio": "^1.0.0-rc.3",
+    "commander": "^2.20.0",
+    "inquirer": "^6.4.1",
+    "open": "^6.4.0",
+    "ora": "^3.4.0"
+  }
+}
