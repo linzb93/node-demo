@@ -5,9 +5,16 @@ const inquirer = require('inquirer');
 const ora = require('ora');
 const chalk = require('chalk');
 const Table = require('cli-table3');
+
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync')
+const adapter = new FileSync('db.json')
+const db = low(adapter)
 const table = new Table({
   head: [chalk.green('名称'), chalk.green('周下载量')]
 });
+db.defaults({ items: []})
+  .write();
 
 function transformNumberCn(val) {
   // 12,345,678 => 1234万
@@ -18,14 +25,22 @@ function transformNumberCn(val) {
   return value;
 }
 
-const fetchNp = async args => {
-  if (args.length === 1) {
-    const packageName = args[0];
-    let spinner = ora(`正在查找 ${packageName} 模块`).start();
+// 获取单个包信息
+async function fetchNp(packageName) {
+  let spinner = ora(`正在查找 ${packageName} 模块`).start();
+  let data = {};
+  const searchItems = db.get('items').filter(item => item.name === packageName).value();
+  if (searchItems.length) {
+    data = {
+      desc: searchItems[0].desc,
+      weeklyDl: transformNumberCn(searchItems[0].weeklyDl),
+      lastPb: searchItems[0].lastPb
+    }
+  } else {
     let res;
     try {
       res = await axios.get(`https://www.npmjs.com/package/${packageName}`);
-    } catch (e) {
+    } catch(e) {
       if (e.response && e.response.statusText === 'Not Found') {
         spinner.fail(`没有 ${packageName} 这个模块`);
       } else if (e.code === 'ETIMEDOUT') {
@@ -35,24 +50,27 @@ const fetchNp = async args => {
       }
       process.exit(0);
     }
-    spinner.stop();
     const $ = cheerio.load(res.data);
     if (!$('._9ba9a726').length) {
       console.log(chalk.red(`可能 https://npmjs.com 重新发布，请修改。`));
       return;
     }
-
     /**
     * 获取描述文字
     * 如果第一段是徽章，就获取第二段，否则移除第一段里面的html标签
     */
     const $firstP = $('article p').first();
-    const data = {
+    data = {
+      name: packageName,
       desc: $firstP.text().trim() === '' ? $firstP.next().text() : $firstP.text(),
-      weeklyDl: transformNumberCn($('._9ba9a726').text()),
+      weeklyDl: $('._9ba9a726').text(),
       lastPb: $('.f2874b88 time').text()
     };
-    console.log(`${chalk.bold(`关于${packageName}`)}:
+    db.get('items').push(data).write();
+    data.weeklyDl = transformNumberCn(data.weeklyDl);
+  }
+  spinner.stop();
+  console.log(`${chalk.bold(`关于${packageName}`)}:
   ${data.desc}
   周下载量：${chalk.green(data.weeklyDl)}
   上次更新：${chalk.green(data.lastPb)}`);
@@ -68,8 +86,10 @@ const fetchNp = async args => {
       const url = $('.fdbf4038').children().eq(6).find('a').attr('href');
       open(url);
     }
-  } else {
-    let spinner = ora(`正在查找 ${args.join(' ')} 这些模块`).start();
+}
+// 获取多个包信息并比较
+async function fetchMulNp(args) {
+  let spinner = ora(`正在查找 ${args.join(' ')} 这些模块`).start();
     let resList;
     try {
       resList = await Promise.all(args.map(arg => axios.get(`https://www.npmjs.com/package/${arg}`)));
@@ -88,14 +108,19 @@ const fetchNp = async args => {
         console.log(chalk.red(`可能 https://npmjs.com 重新发布，请修改。`));
         process.exit(0);
       }
-      let obj = {};
+      let obj = [];
       const key = res.config.url.split('/').pop();
-      obj[key] = transformNumberCn($('._9ba9a726').text());
+      obj.push(key, transformNumberCn($('._9ba9a726').text()));
       return obj;
     });
     table.push(...retList)
     console.log(table.toString())
-  }
 }
 
-module.exports = fetchNp;
+module.exports = async args => {
+  if (args.length === 1) {
+    fetchNp(args[0])
+  } else {
+    fetchMulNp(args);
+  }
+};
