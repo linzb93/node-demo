@@ -14,6 +14,9 @@ switch(type) {
   case 'npm-s':
     require('./npmSearch')(arg);
     break;
+  case 'npm-c':
+    require('./npmDb')();
+    break;
   default:
     console.log(chalk.red('命令输入有误，请重新输入！'));
     break;
