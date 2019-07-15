@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const meow = require('meow');
+const chalk = require('chalk');
 
 const cli = meow();
 
@@ -14,6 +15,6 @@ switch(type) {
     require('./npmSearch')(arg);
     break;
   default:
-    console.log('命令输入有误，请重新输入！');
+    console.log(chalk.red('命令输入有误，请重新输入！'));
     break;
 }

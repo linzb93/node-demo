@@ -5,10 +5,10 @@ const inquirer = require('inquirer');
 const ora = require('ora');
 const chalk = require('chalk');
 const Table = require('cli-table3');
-
+const path = require('path');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync')
-const adapter = new FileSync('db.json')
+const adapter = new FileSync(path.resolve(__dirname, 'db.json'))
 const db = low(adapter)
 const table = new Table({
   head: [chalk.green('名称'), chalk.green('周下载量')]
@@ -34,7 +34,8 @@ async function fetchNp(packageName) {
     data = {
       desc: searchItems[0].desc,
       weeklyDl: transformNumberCn(searchItems[0].weeklyDl),
-      lastPb: searchItems[0].lastPb
+      lastPb: searchItems[0].lastPb,
+      homepage: searchItems[0].homepage
     }
   } else {
     let res;
@@ -62,9 +63,10 @@ async function fetchNp(packageName) {
     const $firstP = $('article p').first();
     data = {
       name: packageName,
-      desc: $firstP.text().trim() === '' ? $firstP.next().text() : $firstP.text(),
+      desc: $firstP.text().trim() === '' ? $firstP.next().text().trim() : $firstP.text().trim(),
       weeklyDl: $('._9ba9a726').text(),
-      lastPb: $('.f2874b88 time').text()
+      lastPb: $('.f2874b88 time').text(),
+      homepage: $('.fdbf4038').children().eq(6).find('a').attr('href')
     };
     db.get('items').push(data).write();
     data.weeklyDl = transformNumberCn(data.weeklyDl);
@@ -83,8 +85,7 @@ async function fetchNp(packageName) {
       }
     ]);
     if (openHomepage) {
-      const url = $('.fdbf4038').children().eq(6).find('a').attr('href');
-      open(url);
+      open(data.homepage);
     }
 }
 // 获取多个包信息并比较
@@ -120,7 +121,24 @@ async function fetchMulNp(args) {
 module.exports = async args => {
   if (args.length === 1) {
     fetchNp(args[0])
-  } else {
+  } else if (args.length > 1) {
     fetchMulNp(args);
+  } else {
+    const {packageName} = await inquirer.prompt([
+      {
+        type: 'input',
+        message: '请输入需要查找的 package 名称',
+        default: null,
+        name: 'packageName'
+      }
+    ]);
+    const pkg = packageName.split(' ');
+    if (pkg.length === 1 && pkg[0]) {
+      fetchNp(pkg[0])
+    } else if (pkg.length > 1) {
+      fetchMulNp(pkg);
+    } else {
+      console.log(chalk.red('未检测到 package 名称，退出程序。'))
+    }
   }
 };
