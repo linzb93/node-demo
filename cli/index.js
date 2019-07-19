@@ -17,6 +17,9 @@ switch(type) {
   case 'npm-c':
     require('./npmDb')();
     break;
+  case 'local':
+    require('./local')(arg);
+    break;
   default:
     console.log(chalk.red('命令输入有误，请重新输入！'));
     break;
