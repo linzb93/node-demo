@@ -1,21 +1,16 @@
-var express = require('express')
-var app = express();
-var fs = require('fs');
-var JSON = require('json5');
-var bodyParser = require('body-parser');
+const express = require('express');
+const app = express();
+const open = require('open');
+const router = express.Router();
 
-//body parse
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.set('view engine', 'ejs');
 
-//设置assets文件夹内的文件可以直接访问
-app.use(express.static('assets'));
-
-// 获取请求数据
-app.post('/', function (req, res) {
-    console.log(req.body);
+router.get('/', (req, res) => {
+  res.render('index', {title: 'http://localhost:3000'})
 });
 
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
-})
+app.use('/', router);
+
+app.listen(3000, () => {
+  open('http://localhost:3000/');
+});

@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "start": "node index"
+  },
+  "dependencies": {
+    "ejs": "^2.6.2",
+    "express": "^4.17.1",
+    "open": "^6.4.0"
+  }
+}
