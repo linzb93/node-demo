@@ -1,0 +1,18 @@
+<html>
+  <head></head>
+  <body>
+    <form id="form" action="/upload" method="POST" enctype='multipart/form-data' target="iframe_hide">
+      <input type="file" name="content">
+      <button type="submit">提交</button>
+    </form>
+    <iframe name="iframe_hide" id="iframe_hide" style="display: none;"></iframe>
+    <script>
+      document.getElementById('form').addEventListener('submit', function() {
+        const ret = confirm('上传完成，是否返回首页？');
+        if (ret) {
+          location.href = '/';
+        }
+      })
+    </script>
+  </body>
+</html>

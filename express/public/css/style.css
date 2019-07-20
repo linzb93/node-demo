@@ -1,0 +1,8 @@
+li {
+  float: left;
+  width: 200px;
+  margin-right: 25px;
+}
+li img {
+  width: 100%;
+}
