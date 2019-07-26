@@ -1,10 +1,12 @@
 {
   "scripts": {
-    "start": "node index"
+    "start": "nodemon app/index.js"
   },
   "dependencies": {
+    "dayjs": "^1.8.15",
     "ejs": "^2.6.2",
     "express": "^4.17.1",
-    "open": "^6.4.0"
+    "multer": "^1.4.2",
+    "pify": "^4.0.1"
   }
 }

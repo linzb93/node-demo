@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <a href="/upload">上传图片</a>
+    <ul>
+    <% photos.forEach(function(photo){ %>
+      <li><img src=<%= photo.src %>></li>
+    <% }) %>
+    </ul>
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script>
+      $('li').on('click', function() {
+        const $ctx = $(this);
+        const fileName = $(this).find('img').attr('src').split('/').slice(-1)[0];
+        $.ajax({
+          url: '/delete',
+          type: 'POST',
+          data: JSON.stringify({
+            name: fileName
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          success(res) {
+            if (res.code === 200) {
+              $ctx.remove();
+            }
+          }
+        })
+      })
+    </script>
+  </body>
+</html>
