@@ -6,6 +6,7 @@ const chalk = require('chalk');
 const pify = require('pify');
 const open = require('open');
 const inquirer = require('inquirer');
+const ora = require('ora');
 
 const readdir = pify(fs.readdir);
 const stat = pify(fs.stat);
@@ -71,14 +72,18 @@ function afterFinished(dir) {
   open(dir);
 }
 
+const spinner = ora('正在查找');
+
 // main
 function traverseDir(options) {
   const absDir = options.root;
   const exclude = Array.isArray(options.exclude) ? options.exclude : [];
+
   readdir(absDir)
   .then(files => {
     console.log('=================================');
     console.log(`进入 ${absDir} 文件夹`);
+    spinner.start();
     const pm = files
     .filter(file => !exclude.includes(file))
     .map(file => {
@@ -117,45 +122,52 @@ function traverseDir(options) {
     } else {
       console.log(chalk.red(mat.message));
     }
+    spinner.stop();
   })
-  .then(resList => {
+  .then(async resList => {
+    spinner.stop();
     if (resList === undefined) {
       return;
     }
-    const filterList = resList
-    .filter(res => res.size >= bytes(options.limit));
-    if (filterList.length === 0) {
-      console.log(chalk.green('没有大的文件/文件夹，退出程序！'));
-      open(options.root);
-      return;
+    if (!options.showAllResult) {
+      const filterList = resList
+      .filter(res => res.size >= bytes(options.limit));
+      if (!filterList.length) {
+        console.log(chalk.green('没有大的文件/文件夹，退出程序！'));
+        return;
+      }
+      console.log('较大的文件/文件夹有：');
+      filterList
+      .forEach(res => {
+        const transformedSize = bytes(res.size, { decimalPlaces: 1 });
+        console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${transformedSize}`);
+      });
+    } else {
+      resList.forEach(res => {
+        const transformedSize = bytes(res.size, { decimalPlaces: 1 });
+        console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${transformedSize}`);
+      })
     }
-    console.log('较大的文件/文件夹有：');
-    filterList
-    .forEach(res => {
-      const transformedSize = bytes(res.size, { decimalPlaces: 1 });
-      console.log(`${res.isDirectory ? '文件夹' : '文件'} ${res.name}: ${transformedSize}`);
-    });
     const maxItem = getMaxItem(resList, 'size');
     console.log(`最大的${maxItem.isDirectory ? '文件夹' : '文件'}是 ${maxItem.name}`);
+
     if (maxItem.isDirectory && !isAllFileInDir(absDir)) {
-      inquirer.prompt([
+      const answer = await inquirer.prompt([
         {
           type: 'confirm',
           name: 'toDeeper',
           message: '是否继续深度搜索？',
           default: false
         }
-      ])
-      .then(answer => {
-        if (answer.toDeeper) {
-          traverseDir({
-            ...options,
-            root: path.resolve(absDir, maxItem.name)
-          })
-        } else {
-          afterFinished(absDir);
-        }
-      })
+      ]);
+      if (answer.toDeeper) {
+        traverseDir({
+          ...options,
+          root: path.resolve(absDir, maxItem.name)
+        })
+      } else {
+        afterFinished(absDir);
+      }
     } else {
       afterFinished(absDir);
     }
@@ -165,5 +177,6 @@ function traverseDir(options) {
 traverseDir({
   root: '', // 需要查询的文件夹路径
   exclude: ['node_modules', '.git', 'README.md', '.dbac'], // 排除的文件夹
-  limit: '1GB' // 最大的尺寸，超过的会显示
+  limit: '1MB', // 最大的尺寸，超过的会显示
+  showAllResult: true // 是否显示所有结果，false就是只显示大文件夹/文件
 });

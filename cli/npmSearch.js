@@ -8,6 +8,7 @@ const Table = require('cli-table3');
 const path = require('path');
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync')
+
 const adapter = new FileSync(path.resolve(__dirname, 'db.json'))
 const db = low(adapter)
 const table = new Table({
@@ -25,9 +26,16 @@ function transformNumberCn(val) {
   return value;
 }
 
+process.on('uncaughtException', err => {
+  console.log(err);
+  process.exit(0);
+});
+
 // 获取单个包信息
 async function fetchNp(packageName) {
   let spinner = ora(`正在查找 ${packageName} 模块`).start();
+  
+  // 先从本地获取，如果没有数据，再从远程获取
   let data = {};
   const searchItems = db.get('items').filter(item => item.name === packageName).value();
   if (searchItems.length) {
@@ -61,13 +69,18 @@ async function fetchNp(packageName) {
     * 如果第一段是徽章，就获取第二段，否则移除第一段里面的html标签
     */
     const $firstP = $('article p').first();
+    const homepageBlock = $('.fdbf4038').children().filter(function() {
+      return $(this).find('h3').text() === 'homepage';
+    });
     data = {
       name: packageName,
       desc: $firstP.text().trim() === '' ? $firstP.next().text().trim() : $firstP.text().trim(),
       weeklyDl: $('._9ba9a726').text(),
       lastPb: $('.f2874b88 time').text(),
-      homepage: $('.fdbf4038').children().eq(6).find('a').attr('href')
+      homepage: homepageBlock ? homepageBlock.find('a').attr('href'): null
     };
+
+    // 将搜索结果存入本地，下次查询时直接从本地获取
     db.get('items').push(data).write();
     data.weeklyDl = transformNumberCn(data.weeklyDl);
   }
@@ -76,6 +89,7 @@ async function fetchNp(packageName) {
   ${data.desc}
   周下载量：${chalk.green(data.weeklyDl)}
   上次更新：${chalk.green(data.lastPb)}`);
+  if (data.homepage) {
     const { openHomepage } = await inquirer.prompt([
       {
         type: 'confirm',
@@ -87,7 +101,9 @@ async function fetchNp(packageName) {
     if (openHomepage) {
       open(data.homepage);
     }
+  }
 }
+
 // 获取多个包信息并比较
 async function fetchMulNp(args) {
   let spinner = ora(`正在查找 ${args.join(' ')} 这些模块`).start();
