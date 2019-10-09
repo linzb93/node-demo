@@ -1,11 +1,12 @@
 /**
- * 这段代码是我用来检测自己收集的awesome-npm里面有多少个包
+ * 这段代码是我用来检测自己收集的awesome-tools里面有多少个包
  */
 const fs = require('fs');
 const pify = require('pify');
 const MarkdownIt = require('markdown-it');
 const cheerio = require('cheerio');
 const chalk = require('chalk');
+
 const md = new MarkdownIt();
 const readFile = pify(fs.readFile);
 

@@ -1,4 +1,4 @@
-// 抓取图片
+// 抓取一个页面里指定的图片
 var fs = require('fs');
 const axios = require('axios');
 var cheerio = require("cheerio");
