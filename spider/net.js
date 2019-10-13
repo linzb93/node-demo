@@ -31,6 +31,7 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
       incomplete: chalk.bgWhite(' ')
     });
     cliCursor.hide();
+    console.log('\n');
     await pEach(siteList, async item => {
       try {
         await axios.get(item.url);
@@ -51,6 +52,7 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
       }
     });
     cliCursor.show();
+    console.log('\n');
     if (errorCounter.count) {
       console.log(chalk.red(`有${errorCounter.count}个网站无法访问`));
       clipboardy.writeSync(`http://777.nd.com.cn/news/link.html ${errorCounter.site.join()}，是否移除？`);
