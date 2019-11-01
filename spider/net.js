@@ -1,12 +1,13 @@
 // 检测网址是否可以访问
 const axios = require('axios');
 const cheerio = require('cheerio');
-const pEach = require('p-each-series');
+const pAll = require('p-all');
 const ProgressBar = require('progress');
 const iconvLite = require('iconv-lite');
 const chalk = require('chalk');
 const cliCursor = require('cli-cursor');
 const clipboardy = require('clipboardy');
+const ms = require('ms');
 
 axios.get('http://www.nd.com.cn/about/link.shtml', {
   responseType: 'arraybuffer'
@@ -32,27 +33,31 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
     });
     cliCursor.hide();
     console.log('\n');
-    await pEach(siteList, async item => {
-      try {
-        await axios.get(item.url);
-        bar.tick();
-      } catch (e) {
-        bar.tick();
-        errorCounter.count++;
-        let errMsg = '';
-        if (e.response && e.response.statusText === 'Not Found') {
-          errMsg = `${item.title} 网站不存在`;
-        } else if (e.code === 'ETIMEDOUT') {
-          errMsg = `${item.title} 访问超时`;
-        } else {
-          errMsg = `${item.title} 无法访问`;
+    const start = new Date().getTime();
+    await pAll(siteList.map(item => {
+      return async () => {
+        try {
+          await axios.get(item.url);
+          bar.tick();
+        } catch (e) {
+          bar.tick();
+          errorCounter.count++;
+          let errMsg = '';
+          if (e.response && e.response.statusText === 'Not Found') {
+            errMsg = `${item.title} 网站不存在`;
+          } else if (e.code === 'ETIMEDOUT') {
+            errMsg = `${item.title} 访问超时`;
+          } else {
+            errMsg = `${item.title} 无法访问`;
+          }
+          errorCounter.site.push(errMsg);
+          bar.interrupt(chalk.red(errMsg));
         }
-        errorCounter.site.push(errMsg);
-        bar.interrupt(chalk.red(errMsg));
       }
-    });
+    }));
     cliCursor.show();
     console.log('\n');
+    console.log(`用时${ms(new Date().getTime() - start)}`);
     if (errorCounter.count) {
       console.log(chalk.red(`有${errorCounter.count}个网站无法访问`));
       clipboardy.writeSync(`http://777.nd.com.cn/news/link.html ${errorCounter.site.join()}，是否移除？`);
