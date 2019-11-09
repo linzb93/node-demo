@@ -1,7 +1,6 @@
 // 抓取图片列表
 const fs = require('fs');
 const axios = require('axios');
-const mkdirp = require('mkdirp');
 const archiver = require('archiver');
 const ora = require('ora');
 const open = require('open');
@@ -10,12 +9,6 @@ const dir = './images';
 // 图片名称列表
 const imgList = [];
 const prefix = '';
-//创建目录
-mkdirp(dir, function(err) {
-  if(err){
-    console.error(err);
-  }
-});
 
 const pMap = imgList.map(item => {
   return axios.get(`${prefix}/${item}`, {
@@ -46,9 +39,7 @@ Promise.all(pMap)
     spinner.fail(err);
   });
   archive.pipe(output);
-  
   archive.directory('images')
-  
   archive.finalize();
 })
 .catch(err => {
