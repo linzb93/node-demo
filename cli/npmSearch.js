@@ -70,7 +70,7 @@ async function fetchNp(packageName) {
     */
     const $firstP = $('article p').first();
     const homepageBlock = $('.fdbf4038').children().filter(function() {
-      return $(this).find('h3').text() === 'homepage';
+      return $(this).find('h3').text().toLowerCase() === 'homepage';
     });
     data = {
       name: packageName,
