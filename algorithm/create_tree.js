@@ -14,7 +14,11 @@ let obj = [createTreeNode()];
 while(counter < totalNode) {
   if (path.length === 1 && path[0] === 0) {
     // 目前在根节点
-    obj[0].children.push(createTreeNode());
+    if (obj[0].children) {
+      obj[0].children.push(createTreeNode());
+    } else {
+      obj[0].children = [createTreeNode()];
+    }
     path.push(obj[0].children.length - 1);
   } else {
     var is = isCreateChildNode();
@@ -23,7 +27,11 @@ while(counter < totalNode) {
       for (let i = 1; i < path.length; i++) {
         target = target.children[path[i]];
       }
-      target.children.push(createTreeNode());
+      if (target.children) {
+        target.children.push(createTreeNode());
+      } else {
+        target.children = [createTreeNode()];
+      }
       path.push(target.children.length - 1);
     } else {
       path.pop();
@@ -38,8 +46,7 @@ function createTreeNode() {
   counter++;
   return {
     id: uuid(),
-    name: `节点${counter}`,
-    children: []
+    name: `节点${counter}`
   }
 }
 
