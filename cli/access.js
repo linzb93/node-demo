@@ -9,9 +9,10 @@ const cliCursor = require('cli-cursor');
 const clipboardy = require('clipboardy');
 const ms = require('ms');
 
-axios.get('http://www.nd.com.cn/about/link.shtml', {
-  responseType: 'arraybuffer'
-})
+module.exports = () => {
+  axios.get('http://www.nd.com.cn/about/link.shtml', {
+    responseType: 'arraybuffer'
+  })
   .then(async res => {
     const $ = cheerio.load(iconvLite.decode(Buffer.concat([res.data]), 'gbk'));
     const siteList = [];
@@ -47,7 +48,7 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
         } else if (e.code === 'ETIMEDOUT') {
           errMsg = `${item.title} 访问超时`;
         } else {
-          errMsg = `${item.title} 无法访问`;
+          errMsg = `${item.title} 无法访问，${e}`;
         }
         errorCounter.site.push(errMsg);
         bar.interrupt(chalk.red(errMsg));
@@ -67,3 +68,4 @@ axios.get('http://www.nd.com.cn/about/link.shtml', {
   .catch(e => {
     console.log(chalk.red(e));
   });
+}

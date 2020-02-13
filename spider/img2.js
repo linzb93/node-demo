@@ -1,4 +1,4 @@
-// 抓取图片列表
+// 抓取CMS图片列表
 const fs = require('fs');
 const axios = require('axios');
 const archiver = require('archiver');
