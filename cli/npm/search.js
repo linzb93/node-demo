@@ -7,15 +7,17 @@ const chalk = require('chalk');
 const Table = require('cli-table3');
 const path = require('path');
 const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync')
+const FileSync = require('lowdb/adapters/FileSync');
+const {errorLogger} = require('../lib/util');
 
 const adapter = new FileSync(path.resolve(__dirname, 'db.json'))
 const db = low(adapter)
 const table = new Table({
   head: [chalk.green('名称'), chalk.green('周下载量')]
 });
-db.defaults({ items: []})
-  .write();
+db
+.defaults({ items: []})
+.write();
 
 function transformNumberCn(val) {
   // 12,345,678 => 1234万
@@ -25,11 +27,6 @@ function transformNumberCn(val) {
   }
   return value;
 }
-
-process.on('uncaughtException', err => {
-  console.log(err);
-  process.exit(0);
-});
 
 // 获取单个包信息
 async function fetchNp(packageName) {
@@ -61,7 +58,7 @@ async function fetchNp(packageName) {
     }
     const $ = cheerio.load(res.data);
     if (!$('._9ba9a726').length) {
-      console.log(chalk.red(`可能 https://npmjs.com 重新发布，请修改。`));
+      errorLogger(`可能 https://npmjs.com 重新发布，请修改。`);
       return;
     }
     /**
@@ -122,7 +119,7 @@ async function fetchMulNp(args) {
     const retList = resList.map(res => {
       const $ = cheerio.load(res.data);
       if (!$('._9ba9a726').length) {
-        console.log(chalk.red(`可能 https://npmjs.com 重新发布，请修改。`));
+        errorLogger(`可能 https://npmjs.com 重新发布，请修改。`);
         process.exit(0);
       }
       let obj = [];
@@ -130,8 +127,8 @@ async function fetchMulNp(args) {
       obj.push(key, transformNumberCn($('._9ba9a726').text()));
       return obj;
     });
-    table.push(...retList)
-    console.log(table.toString())
+    table.push(...retList);
+    console.log(table.toString());
 }
 
 module.exports = async args => {
@@ -154,7 +151,7 @@ module.exports = async args => {
     } else if (pkg.length > 1) {
       fetchMulNp(pkg);
     } else {
-      console.log(chalk.red('未检测到 package 名称，退出程序。'))
+      errorLogger('未检测到 package 名称，退出程序。');
     }
   }
 };

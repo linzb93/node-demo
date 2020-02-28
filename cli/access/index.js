@@ -8,6 +8,7 @@ const chalk = require('chalk');
 const cliCursor = require('cli-cursor');
 const clipboardy = require('clipboardy');
 const ms = require('ms');
+const {successLogger, errorLogger} = require('../lib/util');
 
 module.exports = () => {
   axios.get('http://www.nd.com.cn/about/link.shtml', {
@@ -59,13 +60,13 @@ module.exports = () => {
     console.log('\n');
     console.log(`用时${ms(new Date().getTime() - start)}`);
     if (errorCounter.count) {
-      console.log(chalk.red(`有${errorCounter.count}个网站无法访问`));
+      errorLogger(`有${errorCounter.count}个网站无法访问`);
       clipboardy.writeSync(`http://777.nd.com.cn/news/link.html ${errorCounter.site.join()}，是否移除？`);
     } else {
-      console.log(chalk.green('所有网站均可正常访问'));
+      successLogger('所有网站均可正常访问');
     }
   })
   .catch(e => {
-    console.log(chalk.red(e));
+    errorLogger(e);
   });
 }

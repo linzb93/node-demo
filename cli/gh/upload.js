@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const inquirer = require('inquirer');
-const chalk = require('chalk');
+const {successLogger, errorLogger, warnLogger} = require('../lib/util');
+
 const repository = `${process.env.HOME}/Documents/GitHub/node-demo`;
 
 module.exports = async args => {
@@ -63,25 +64,17 @@ module.exports = async args => {
     if (!pathExists) {
       await fs.mkdir(`${repository}/${dest.split('/')[0]}`);
     }
-    const fileExists = await fs.pathExists(`${repository}/${dest}.js`);
+    let newDest = dest;
+    if (dest.split('/')[1] === '') {
+      newDest = `${dest}${args[0]}`;
+    }
+    const fileExists = await fs.pathExists(`${repository}/${newDest}.js`);
     try {
-      await fs.copyFile(originFile, `${repository}/${dest}.js`);
+      await fs.copyFile(originFile, `${repository}/${newDest}.js`);
     } catch (e) {
       errorLogger(e);
       return;
     }
-    successLogger(`文件 ${dest}.js ${fileExists ? '更新' : '添加'}成功`);
+    successLogger(`文件 ${newDest}.js ${fileExists ? '更新' : '添加'}成功`);
   }
-}
-
-function errorLogger(text) {
-  console.log(chalk.red(text));
-}
-
-function successLogger(text) {
-  console.log(chalk.green(text));
-}
-
-function warnLogger(text) {
-  console.log(chalk.yellow(text));
 }

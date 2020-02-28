@@ -1,31 +1,32 @@
 #!/usr/bin/env node
-const meow = require('meow');
-const chalk = require('chalk');
+const {errorLogger} = require('./lib/util');
 
-const cli = meow();
-const type = cli.input[0];
-const arg = cli.input.slice(1);
-
-switch(type) {
-  case 'mikit':
-    require('./mikit')();
-    break;
-  case 'npm-s':
-    require('./npmSearch')(arg); // 搜索npm package下载量等信息
-    break;
-  case 'npm-c':
-    require('./npmDb')(); // 清除本地npm搜索记录
-    break;
-  case 'access':
-    require('./access')(); // 公司“精彩链接”能否正常访问
-    break;
-  case 'require':
-    require('./require')(arg); // 一个js文件里面引用的npm package是否都已安装
-    break;
-  case 'gh':
-    require('./gh')(arg); // 将本地node-demo代码上传至GitHub
-    break;
-  default:
-    console.log(chalk.red('命令输入有误，请重新输入！'));
-    break;
+process.on('uncaughtException', err => {
+  errorLogger(err);
+  process.exit(0);
+});
+process.on('uncaughtRejection', err => {
+  errorLogger(err);
+  process.exit(0);
+});
+const cli = process.argv.slice(2);
+const type = cli[0];
+let args, flag;
+if (cli[1] && cli[1].indexOf('-') === 0) {
+  args = cli.slice(2);
+  flag = cli[1].replace('-', '');
+} else {
+  args = cli.slice(1);
+}
+const typeMap = {
+  'npm': 'npm',          // npm相关
+  'access': 'access',    // 公司“精彩链接”能否正常访问
+  'gh': 'gh',            // 本地node-demo代码同步相关
+  'mock': 'mock',        // 接口mock
+  'diary': 'diary',      // 复制日记模板
+};
+if (typeMap[type]) {
+  require(`./${typeMap[type]}`)(args, flag);
+} else {
+  errorLogger('命令输入有误，请重新输入！');
 }
