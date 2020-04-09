@@ -1,3 +1,4 @@
+//微信公众号更新
 const fs = require('fs-extra');
 const through = require('through2');
 const split = require('binary-split');

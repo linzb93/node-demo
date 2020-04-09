@@ -24,6 +24,7 @@ const typeMap = {
   'gh': 'gh',            // 本地node-demo代码同步相关
   'mock': 'mock',        // 接口mock
   'diary': 'diary',      // 复制日记模板
+  'yuque': 'yuque',      // 语雀cli app
 };
 if (typeMap[type]) {
   require(`./${typeMap[type]}`)(args, flag);
