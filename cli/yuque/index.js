@@ -1,9 +1,3 @@
-const flagMap = {
-  'i': 'init',
-  'u': 'upload'
-};
-module.exports = (args, flag) => {
-  if (flagMap[flag]) {
-    require(`./${flagMap[flag]}`)(args);
-  }
-}
+const {moduleInit} = require('../lib/util');
+
+module.exports = moduleInit.bind(this, __dirname);
